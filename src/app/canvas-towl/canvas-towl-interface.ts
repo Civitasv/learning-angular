@@ -47,6 +47,7 @@ export interface Configuration {
   color: string[],
   // 格式化字体输出
   fontFormatter: any,
+  highlightColor: string,
   // tooltip显示
   tooltip: {
     show: boolean,
@@ -56,16 +57,4 @@ export interface Configuration {
     formatter: any, // 返回方法
     z: number// tooltip z-index层级
   },
-  // 样式
-  infoStyle: {
-    stroke: boolean, //是否描边
-    strokeColor: string, // 描边颜色
-    size: number, // 字体大小
-    color: string, //颜色
-    width: number, // 设置多少 就会在基础上加上设置的值
-    offset: number[], // 字体x,y的偏移度
-    setLineDash: number[], //虚线值
-    highlightedColor: string, //高亮颜色
-    dotSize: number//点大小
-  }
 }

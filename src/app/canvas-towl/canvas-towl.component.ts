@@ -75,14 +75,15 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
   options: Configuration = {
     title: '标题',
     // 主体离边框距离
-    padding: [20, 20],
+    padding: [30, 30],
     // 主体偏移值 (x,y)
-    offset: [0, 0],
+    offset: [0, -10],
     margin: 5,
     // 排序(max , min)优先
-    sort: '',
+    sort: 'max',
     // 颜色
     color: ['#80FFA5', '#00DDFF', '#37A2FF', '#FF0087', '#FFBF00'],
+    highlightColor: "#fff",
     // 格式化字体输出
     fontFormatter: () => {
       return 'default'
@@ -93,25 +94,13 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
     move: true,
     // tooltip信息配置
     tooltip: {
-      show: true, // 是否显示
+      show: false, // 是否显示
       fontColor: '#000', //  字体内部颜色
       fontSize: 14, // 字体大小
       backgroundColor: '#fff', // tooltip背景
       formatter: null, // 回调方法
       z: 999999 // tooltip z-index层级
     },
-    // 样式
-    infoStyle: {
-      stroke: false, // 是否描边
-      strokeColor: '#fff', //描边颜色
-      size: null, // 字体大小
-      color: null, //颜色
-      highlightedColor: '#fff', // 高亮颜色
-      setLineDash: [0, 0], // 虚线值
-      width: -10, // 设置多少 就会在基础上加上设置的值
-      offset: [0, 0], // 字体x,y的偏移度
-      dotSize: 4 //点大小
-    }
   };
 
   /** 数据项 */
@@ -120,9 +109,6 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
     { name: "示例1", value: 20 },
     { name: "示例2", value: 10 },
     { name: "示例3", value: 20 },
-    { name: "示例4", value: 30 },
-    { name: "示例5", value: 35 },
-    { name: "示例6", value: 50 },
   ];
 
   @Output()
@@ -164,6 +150,7 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
       move: this.options.move ? this.options.move : false,
       // 颜色
       color: this.options.color ? this.options.color : ['#80FFA5', '#00DDFF', '#37A2FF', '#FF0087', '#FFBF00'],
+      highlightColor: "#fff",
       // 格式化字体输出
       fontFormatter: this.options.fontFormatter
         ? this.options.fontFormatter
@@ -191,46 +178,6 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
           : null, // 返回方法
         z: this.options.tooltip ? (this.options.tooltip.z ? this.options.tooltip.z : 999999) : 999999 // tooltip z-index层级
       },
-      // 样式
-      infoStyle: {
-        stroke: this.options.infoStyle
-          ? this.options.infoStyle.stroke
-            ? this.options.infoStyle.stroke
-            : false
-          : false, //是否描边
-        strokeColor: this.options.infoStyle
-          ? this.options.infoStyle.strokeColor
-            ? this.options.infoStyle.strokeColor
-            : '#fff'
-          : '#fff', // 描边颜色
-        size: this.options.infoStyle ? (this.options.infoStyle.size ? this.options.infoStyle.size : null) : null, // 字体大小
-        color: this.options.infoStyle ? (this.options.infoStyle.color ? this.options.infoStyle.color : null) : null, //颜色
-        width: this.options.infoStyle
-          ? this.options.infoStyle.width || this.options.infoStyle.width !== 0
-            ? this.options.infoStyle.width
-            : -10
-          : -10, // 设置多少 就会在基础上加上设置的值
-        offset: this.options.infoStyle
-          ? this.options.infoStyle.offset
-            ? this.options.infoStyle.offset
-            : [0, 0]
-          : [0, 0], // 字体x,y的偏移度
-        setLineDash: this.options.infoStyle
-          ? this.options.infoStyle.setLineDash
-            ? this.options.infoStyle.setLineDash
-            : [0, 0]
-          : [0, 0], //虚线值
-        highlightedColor: this.options.infoStyle
-          ? this.options.infoStyle.highlightedColor
-            ? this.options.infoStyle.highlightedColor
-            : '#fff'
-          : '#fff', //高亮颜色
-        dotSize: this.options.infoStyle
-          ? this.options.infoStyle.dotSize || this.options.infoStyle.dotSize !== 0
-            ? this.options.infoStyle.dotSize
-            : 4
-          : 4 //点大小
-      }
     }
   }
 
@@ -240,8 +187,7 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
     this.initCanvasDomElement()
     this.initCanvasBaseInfo()
     this.paintDataInfo()
-    this.paintText()
-    this.paintingBody()
+    this.addShadow()
   }
 
   /**
@@ -334,8 +280,8 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
     }
     this.topAngle.LTB = this.calculateAngle(this.points.top, this.points.left, this.points.bottom)
     this.topAngle.RTB = this.calculateAngle(this.points.top, this.points.right, this.points.bottom)
-    // 计算各数据点位置
-    this.calculationPointPosition(this.detailsDataInfo)
+    // 计算金字塔各部分关键点
+    this.calculatePyramidParts(this.detailsDataInfo)
   }
 
   /**
@@ -353,6 +299,7 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
       return { ...item, color: this.config.color[index] }
     })
 
+    this.ctx.shadowBlur = 0
     this.detailsDataInfo.forEach((item, index) => {
       this.ctx.fillStyle = item.color
       this.ctx.beginPath()
@@ -364,103 +311,18 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
       this.ctx.lineTo(item.points.topRight.x, item.points.topRight.y)
       this.ctx.lineTo(item.points.top.x, item.points.top.y)
 
-      if (this.config.infoStyle.stroke) {
-        this.ctx.shadowOffsetX = 0
-        this.ctx.shadowOffsetY = 0
-        this.ctx.shadowBlur = 2
-        this.ctx.shadowColor = this.config.infoStyle.strokeColor
-      }
       this.ctx.fill()
     })
   }
 
   /**
-   * @description: 绘制字体
-   * @param {*} layer 图层数据
+   * @description: 添加阴影
    * @return {*}
    */
-  paintText(layer: Level = null): void {
+  addShadow(): void {
     this.ctx.shadowColor = 'rgba(90,90,90,0)'
-    const color = this.config.infoStyle.color ? this.config.infoStyle.color : '#fff'
-    const width = this.config.infoStyle.width ? this.config.infoStyle.width : 0
-    const dotSize = this.config.infoStyle.dotSize ? this.config.infoStyle.dotSize : 4
-    const offset = this.config.infoStyle.offset ? this.config.infoStyle.offset : [0, 0]
-    let text = ''
-    this.ctx.strokeStyle = color
-    this.ctx.fillStyle = color
-    this.detailsDataInfo.forEach((item, index) => {
-      if (item.points) {
-        let line: Point[] = [
-          { x: 0, y: 0 },
-          { x: 0, y: 0 }
-        ]
-        this.ctx.font = `normal lighter ${this.config.infoStyle.size ? this.config.infoStyle.size : 14
-          }px sans-serif `
-        this.ctx.beginPath()
-        if (layer && index + 1 === layer.index) {
-          line = [
-            {
-              x: layer.details.points.bottom.x,
-              y: (layer.details.points.bottom.y + layer.details.points.top.y) / 2
-            },
-            {
-              x: layer.details.points.bottom.x + layer.details.points.bottom.x / 2 + width,
-              y: (layer.details.points.bottom.y + layer.details.points.top.y) / 2
-            }
-          ]
-          this.ctx.font = `normal lighter ${this.config.infoStyle.size ? this.config.infoStyle.size + 2 : 16
-            }px sans-serif `
-          text =
-            this.config.fontFormatter(item) !== 'default'
-              ? this.config.fontFormatter(item)
-              : layer.details.value + ' ---- ' + layer.details.name
-          this.ctx.setLineDash([0, 0])
-          this.ctx.strokeText(
-            text,
-            line[1].x + offset[0],
-            line[1].y + (this.config.infoStyle.size ? this.config.infoStyle.size + 2 : 14) / 3 + offset[1]
-          )
-        } else {
-          line = [
-            {
-              x: item.points.bottom.x,
-              y: (item.points.bottom.y + item.points.top.y) / 2
-            },
-            {
-              x: item.points.bottom.x + item.points.bottom.x / 2 + width,
-              y: (item.points.bottom.y + item.points.top.y) / 2
-            }
-          ]
-          text =
-            this.config.fontFormatter(item) !== 'default'
-              ? this.config.fontFormatter(item)
-              : item.value + ' ----- ' + item.name
-          this.ctx.setLineDash([0, 0])
-          this.ctx.strokeText(
-            text,
-            line[1].x + offset[0],
-            line[1].y + (this.config.infoStyle.size ? this.config.infoStyle.size + 2 : 16) / 3 + offset[1]
-          )
-        }
-        this.ctx.setLineDash(this.config.infoStyle.setLineDash)
-        this.ctx.moveTo(line[0].x, line[0].y)
-        this.ctx.lineTo(line[1].x, line[1].y)
-        this.ctx.stroke()
-        this.ctx.arc(line[0].x, line[0].y, dotSize, 0, 360, false)
-        this.ctx.fill() //画实心圆
-      } else {
-        throw '未找到 drawingPoint 属性'
-      }
-    })
-  }
-
-  /**
-   * @description: 绘画主体
-   * @return {*}
-   */
-  paintingBody(): void {
+    this.ctx.fillStyle = 'rgba(120,120,120,.15)'
     this.detailsDataInfo.forEach(item => {
-      this.ctx.fillStyle = 'rgba(120,120,120,.15)'
       this.ctx.beginPath()
       this.ctx.moveTo(item.points.topLeft.x, item.points.topLeft.y)
       this.ctx.lineTo(item.points.bottomLeft.x, item.points.bottomLeft.y)
@@ -536,30 +398,28 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
     // const width = this.canvas.width;
     // this.canvas.width = width;
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+    this.paintDataInfo()
+    this.addShadow()
     if (!layer) {
-      this.paintDataInfo()
-      this.ctx.shadowColor = 'rgba(90,90,90,0)'
-      this.paintingBody()
-      this.paintText()
       return
     }
-    this.paintDataInfo()
-    this.ctx.shadowColor = 'rgba(90,90,90,0)'
-    this.paintingBody()
     this.ctx.fillStyle = layer.details.color
     //  this.ctx.scale(1.05, 1.05)
     this.ctx.beginPath()
+
     this.ctx.moveTo(layer.details.points.topLeft.x, layer.details.points.topLeft.y)
     this.ctx.lineTo(layer.details.points.bottomLeft.x, layer.details.points.bottomLeft.y)
     this.ctx.lineTo(layer.details.points.bottom.x, layer.details.points.bottom.y)
     this.ctx.lineTo(layer.details.points.bottomRight.x, layer.details.points.bottomRight.y)
     this.ctx.lineTo(layer.details.points.topRight.x, layer.details.points.topRight.y)
     this.ctx.lineTo(layer.details.points.top.x, layer.details.points.top.y)
+
     this.ctx.shadowOffsetX = 0
     this.ctx.shadowOffsetY = 0
-    this.ctx.shadowBlur = 10
-    this.ctx.shadowColor = this.config.infoStyle.highlightedColor
+    this.ctx.shadowBlur = 6
+    this.ctx.shadowColor = this.config.highlightColor
     this.ctx.fill()
+
     // 阴影绘制
     this.ctx.beginPath()
     this.ctx.moveTo(layer.details.points.topLeft.x, layer.details.points.topLeft.y)
@@ -570,7 +430,6 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
     this.ctx.lineTo(layer.details.points.top.x, layer.details.points.top.y)
     this.ctx.fillStyle = 'rgba(120,120,120,.15)'
     this.ctx.fill()
-    this.paintText(layer)
   }
 
   /**
@@ -715,52 +574,45 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
    * @param {Array} val 点占比
    * @return {void}
    */
-  calculationPointPosition(val: any): void {
-    const LP = this.rotatePoint(this.points.left, this.points.top, this.topAngle.LTB * -1)
-    const RP = this.rotatePoint(this.points.right, this.points.top, this.topAngle.RTB)
+  calculatePyramidParts(val: any): void {
+    const height = this.points.bottom.y -
+      this.points.top.y;
+    const itemHeight = height / val.length;
+    const factor = 0.9; // 缩小因子
+
     let last: PyramidPart;
     this.detailsDataInfo = val.map((item, index) => {
       if (index === 0) {
-        const verticalLeft = {
+        const vertical = {
           x: this.points.top.x,
-          y: (LP.y - this.points.top.y) * (item.percent / 100) + this.points.top.y
-        }
-
-        const verticalRight = {
-          x: this.points.top.x,
-          y: (RP.y - this.points.top.y) * (item.percent / 100) + this.points.top.y
+          y: itemHeight + this.points.top.y
         }
 
         last = {
           topLeft: this.points.top,
-          bottomLeft: this.rotatePoint(verticalLeft, this.points.top, this.topAngle.LTB),
-          bottom: verticalLeft,
-          bottomRight: this.rotatePoint(verticalRight, this.points.top, this.topAngle.RTB * -1),
+          bottomLeft: this.rotatePoint({ x: vertical.x, y: vertical.y * factor }, this.points.top, this.topAngle.LTB),
+          bottom: vertical,
+          bottomRight: this.rotatePoint({ x: vertical.x, y: vertical.y * factor }, this.points.top, this.topAngle.RTB * -1),
           topRight: this.points.top,
           top: this.points.top
         }
         return { ...item, points: last }
       } else {
-        const verticalBottomLeft = {
+        const verticalBottom = {
           x: this.points.top.x,
-          y: (LP.y - this.points.top.y) * (item.percent / 100) + last.bottom.y + this.config.margin
+          y: itemHeight + last.bottom.y + this.config.margin
         }
-        const verticalBottomRight = {
-          x: this.points.top.x,
-          y: (RP.y - this.points.top.y) * (item.percent / 100) + last.bottom.y + this.config.margin
-        }
-
-        const verticalTopLeft = {
+        const verticalTop = {
           x: last.bottom.x,
           y: last.bottom.y + this.config.margin
         }
         last = {
-          topLeft: this.rotatePoint(verticalTopLeft, this.points.top, this.topAngle.LTB),
-          bottomLeft: this.rotatePoint(verticalBottomLeft, this.points.top, this.topAngle.LTB),
-          bottom: index === val.length - 1 ? this.points.bottom : verticalBottomLeft,
-          bottomRight: this.rotatePoint(verticalBottomRight, this.points.top, this.topAngle.RTB * -1),
-          topRight: this.rotatePoint(verticalTopLeft, this.points.top, -this.topAngle.RTB),
-          top: verticalTopLeft
+          topLeft: this.rotatePoint({ x: verticalTop.x, y: verticalTop.y * factor }, this.points.top, this.topAngle.LTB),
+          bottomLeft: this.rotatePoint({ x: verticalBottom.x, y: verticalBottom.y * factor }, this.points.top, this.topAngle.LTB),
+          bottom: verticalBottom,
+          bottomRight: this.rotatePoint({ x: verticalBottom.x, y: verticalBottom.y * factor }, this.points.top, this.topAngle.RTB * -1),
+          topRight: this.rotatePoint({ x: verticalTop.x, y: verticalTop.y * factor }, this.points.top, -this.topAngle.RTB),
+          top: verticalTop
         }
         return { ...item, points: last }
       }
