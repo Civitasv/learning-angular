@@ -74,32 +74,24 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
   @Input("options")
   options: Configuration = {
     title: '标题',
-    // 主体离边框距离
-    padding: [30, 30],
-    // 主体偏移值 (x,y)
-    offset: [0, -10],
+    padding: [5, 5],
+    offset: [0, -2],
     margin: 5,
-    // 排序(max , min)优先
     sort: 'max',
-    // 颜色
     color: ['#80FFA5', '#00DDFF', '#37A2FF', '#FF0087', '#FFBF00'],
     highlightColor: "#fff",
-    // 格式化字体输出
     fontFormatter: () => {
       return 'default'
     },
-    // 鼠标点击事件
     click: true,
-    // 鼠标移动事件
     move: true,
-    // tooltip信息配置
     tooltip: {
-      show: false, // 是否显示
-      fontColor: '#000', //  字体内部颜色
-      fontSize: 14, // 字体大小
-      backgroundColor: '#fff', // tooltip背景
-      formatter: null, // 回调方法
-      z: 999999 // tooltip z-index层级
+      show: true,
+      fontColor: '#000',
+      fontSize: 14,
+      backgroundColor: '#fff',
+      formatter: null,
+      z: 999999
     },
   };
 
@@ -116,7 +108,6 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes["options"]) {
-      this.config = this.configuration();
       this.init();
     }
     if (changes["data"]) {
@@ -129,62 +120,47 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
 
   ngAfterViewInit(): void {
     console.log("🚀 ~ file: canvas-towl.component.ts ~ line 211 ~ CanvasTowlComponent ~ ngAfterViewInit ~ ngAfterViewInit")
-    this.config = this.configuration();
     this.init();
   }
 
   configuration(): Configuration {
     return {
       title: this.options.title ? this.options.title : '',
-      // 主体离边框距离
       padding: this.options.padding ? this.options.padding : [0, 0],
-      // 层与层间距离
       margin: this.options.margin ? this.options.margin : 2,
-      // 主体偏移值 (x,y)
       offset: this.options.offset ? this.options.offset : [0, 0],
-      // 排序(max , min)优先
       sort: this.options.sort ? this.options.sort : '',
-      // 鼠标点击事件
       click: this.options.click ? this.options.click : false,
-      // 鼠标移动事件
       move: this.options.move ? this.options.move : false,
-      // 颜色
       color: this.options.color ? this.options.color : ['#80FFA5', '#00DDFF', '#37A2FF', '#FF0087', '#FFBF00'],
       highlightColor: "#fff",
-      // 格式化字体输出
       fontFormatter: this.options.fontFormatter
         ? this.options.fontFormatter
         : () => {
           return 'default'
         },
-      // tooltip显示
       tooltip: {
-        show: this.options.tooltip ? (this.options.tooltip.show ? this.options.tooltip.show : false) : false, // 是否显示
-        fontColor: this.options.tooltip
+        show: this.options.tooltip && this.options.tooltip.show ? this.options.tooltip.show : false, // 是否显示
+        fontColor: this.options.tooltip && this.options.tooltip.fontColor
           ? this.options.tooltip.fontColor
-            ? this.options.tooltip.fontColor
-            : '#000'
-          : '#000', //  字体内部颜色
-        fontSize: this.options.tooltip ? (this.options.tooltip.fontSize ? this.options.tooltip.fontSize : 14) : 14, // 字体大小
-        backgroundColor: this.options.tooltip
+          : '#000',
+        fontSize: this.options.tooltip && this.options.tooltip.fontSize ? this.options.tooltip.fontSize : 14,
+        backgroundColor: this.options.tooltip && this.options.tooltip.backgroundColor
           ? this.options.tooltip.backgroundColor
-            ? this.options.tooltip.backgroundColor
-            : '#fff'
-          : '#fff', // tooltip背景
-        formatter: this.options.tooltip
+          : '#fff',
+        formatter: this.options.tooltip && this.options.tooltip.formatter
           ? this.options.tooltip.formatter
-            ? this.options.tooltip.formatter
-            : null
-          : null, // 返回方法
-        z: this.options.tooltip ? (this.options.tooltip.z ? this.options.tooltip.z : 999999) : 999999 // tooltip z-index层级
+          : null,
+        z: this.options.tooltip && this.options.tooltip.z ? this.options.tooltip.z : 999999
       },
     }
   }
 
   init() {
     if (!this.checkData()) return;
-    this.calCulateDetails();
+    this.config = this.configuration();
     this.initCanvasDomElement()
+    this.calCulateDetails();
     this.initCanvasBaseInfo()
     this.paintDataInfo()
     this.addShadow()
@@ -245,35 +221,43 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
    * @return {void}
    */
   initCanvasBaseInfo(): void {
+    const padding = this.config.padding;
+    const paddingX = padding[0] * this.canvasWidth * 0.01;
+    const paddingY = padding[1] * this.canvasHeight * 0.01;
+
+    const offset = this.config.offset;
+    const offsetX = offset[0] * this.canvasWidth * 0.01;
+    const offsetY = offset[1] * this.canvasHeight * 0.01;
+
     // 将canvas元素设置与父元素同宽
     this.canvas.setAttribute('width', this.canvasWidth)
     // 将canvas元素设置与父元素同高
     this.canvas.setAttribute('height', this.canvasHeight)
 
     this.canvasCenter = {
-      x: Math.round((this.canvasWidth - this.config.padding[0] * 2) / 2) + this.config.padding[0],
-      y: Math.round((this.canvasHeight - this.config.padding[1] * 2) / 2) + this.config.padding[1]
+      x: Math.round((this.canvasWidth - paddingX * 2) / 2) + paddingX,
+      y: Math.round((this.canvasHeight - paddingY * 2) / 2) + paddingY
     }
 
     if (this.canvas.getContext) {
       this.ctx = this.canvas.getContext('2d')
       // 金字塔基本点位置
-      this.points.top = { x: this.canvasCenter.x, y: this.config.padding[1] }
+      this.points.top = { x: this.canvasCenter.x, y: paddingY }
       this.points.left = {
-        x: this.config.padding[0] * 1.5,
-        y: this.canvasHeight - this.config.padding[1] - this.canvasHeight / 5
+        x: paddingX * 1.5,
+        y: this.canvasHeight - paddingY - this.canvasHeight / 5
       }
       this.points.right = {
-        x: this.canvasWidth - this.config.padding[0] * 1.9,
-        y: this.canvasHeight - this.config.padding[1] - this.canvasHeight / 5
+        x: this.canvasWidth - paddingX * 1.9,
+        y: this.canvasHeight - paddingY - this.canvasHeight / 5
       }
       this.points.bottom = {
         x: this.canvasCenter.x,
-        y: this.canvasHeight - this.config.padding[1]
+        y: this.canvasHeight - paddingY
       }
       for (const key in this.points) {
-        this.points[key].x = this.points[key].x + this.config.offset[0]
-        this.points[key].y = this.points[key].y + this.config.offset[1]
+        this.points[key].x = this.points[key].x + offsetX
+        this.points[key].y = this.points[key].y + offsetY
       }
     } else {
       throw 'canvas下未找到 getContext方法'
@@ -289,7 +273,6 @@ export class CanvasTowlComponent implements AfterViewInit, OnChanges {
    * @return {*}
    */
   paintDataInfo(): void {
-    const margin = 2
     let index = -1
     this.detailsDataInfo = this.detailsDataInfo.map(item => {
       index++

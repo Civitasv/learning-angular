@@ -31,9 +31,9 @@ export interface PyramidPart {
 
 export interface Configuration {
   title: string,
-  // 主体离边框距离
+  // 主体离边框百分比 (x, y)
   padding: number[],
-  // 主体偏移值 (x,y)
+  // 主体偏移值百分比 (x, y)
   offset: number[],
   // 层与层间距离
   margin: number,
