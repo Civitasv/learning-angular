@@ -1,3 +1,11 @@
 <div class="canvas-towl">
-  <canvas #towl class="towl"> </canvas>
+  <div
+    #wrapper
+    id="canvas-wrapper"
+    (mouseup)="doMouseUp($event)"
+    (mousedown)="doMouseDown($event)"
+    (mousemove)="doMouseMove($event)"
+  >
+    <div #tooltip id="canvas-tooltip"></div>
+  </div>
 </div>
